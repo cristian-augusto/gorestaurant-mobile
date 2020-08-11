@@ -31,7 +31,6 @@ import {
 interface Food {
   id: number;
   name: string;
-  category: number;
   description: string;
   price: number;
   thumbnail_url: string;
@@ -55,49 +54,40 @@ const Dashboard: React.FC = () => {
   const navigation = useNavigation();
 
   async function handleNavigate(id: number): Promise<void> {
-    navigation.navigate('FoodDetails', { id });
+    navigation.navigate('FoodDetails', {
+      id,
+    });
   }
 
   useEffect(() => {
-    async function loadFoods(): Promise<void> {
-      const response = await api.get<Food[]>('foods');
+    async function loadDashboard(): Promise<void> {
+      const foodsResponse = await api.get('/foods', {
+        params: {
+          category_like: selectedCategory,
+          name_like: searchValue,
+        },
+      });
 
-      let loadedFoods = response.data;
+      const categoriesResponse = await api.get('/categories');
 
-      if (selectedCategory)
-        loadedFoods = response.data.filter(
-          food => food.category === selectedCategory,
-        );
-
-      if (searchValue)
-        loadedFoods = response.data.filter(food =>
-          food.name.includes(searchValue),
-        );
-
+      setCategories(categoriesResponse.data);
       setFoods(
-        loadedFoods.map(food => {
-          return {
-            ...food,
-            formattedPrice: formatValue(food.price),
-          };
-        }),
+        foodsResponse.data.map((food: Food) => ({
+          ...food,
+          formattedPrice: formatValue(food.price),
+        })),
       );
     }
 
-    loadFoods();
+    loadDashboard();
   }, [selectedCategory, searchValue]);
 
-  useEffect(() => {
-    async function loadCategories(): Promise<void> {
-      const response = await api.get('categories');
-      setCategories(response.data);
-    }
-
-    loadCategories();
-  }, []);
-
   function handleSelectCategory(id: number): void {
-    setSelectedCategory(state => (state === id ? undefined : id));
+    if (selectedCategory === id) {
+      setSelectedCategory(undefined);
+    } else {
+      setSelectedCategory(id);
+    }
   }
 
   return (

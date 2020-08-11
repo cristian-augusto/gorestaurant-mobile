@@ -121,12 +121,17 @@ const FoodDetails: React.FC = () => {
   }
 
   function handleDecrementFood(): void {
-    setFoodQuantity(state => (state === 0 ? 0 : state - 1));
+    setFoodQuantity(state => (state === 1 ? 1 : state - 1));
   }
 
-  const toggleFavorite = useCallback(() => {
+  const toggleFavorite = useCallback(async () => {
+    if (isFavorite) {
+      await api.delete(`favorites/${food.id}`);
+    } else {
+      await api.post('favorites', { ...food });
+    }
     setIsFavorite(!isFavorite);
-  }, [isFavorite]);
+  }, [isFavorite, food]);
 
   const cartTotal = useMemo(() => {
     const extrasPrice = extras.reduce((acc: number, extra: Extra) => {
@@ -134,13 +139,23 @@ const FoodDetails: React.FC = () => {
       return acc;
     }, 0);
 
-    return (food.price + extrasPrice) * foodQuantity;
+    const formattedCarTotal = formatValue(
+      (food.price + extrasPrice) * foodQuantity,
+    );
+
+    return formattedCarTotal;
   }, [extras, food, foodQuantity]);
 
   async function handleFinishOrder(): Promise<void> {
-    // Finish the order and save on the API
-
-    const order = await api.post('orders');
+    await api.post('orders', {
+      ...food,
+      id: undefined,
+      image_url: undefined,
+      formattedPrice: undefined,
+      product_id: food.id,
+      extras,
+    });
+    navigation.navigate('Orders');
   }
 
   const favoriteIconName = useMemo(
