@@ -73,48 +73,82 @@ const FoodDetails: React.FC = () => {
 
   useEffect(() => {
     async function loadFood(): Promise<void> {
-      // Load a specific food with extras based on routeParams id
+      const { data } = await api.get<Food>(`foods/${routeParams.id}`);
+
+      const loadedFood = { ...data, formattedPrice: formatValue(data.price) };
+
+      setExtras(
+        loadedFood.extras.map(extra => {
+          return {
+            ...extra,
+            quantity: 0,
+          };
+        }),
+      );
+
+      setFood(loadedFood);
     }
 
     loadFood();
   }, [routeParams]);
 
   function handleIncrementExtra(id: number): void {
-    // Increment extra quantity
+    const updatedExtras = extras.map(extra => {
+      if (extra.id === id) {
+        extra.quantity += 1;
+        return extra;
+      }
+      return extra;
+    });
+
+    setExtras(updatedExtras);
   }
 
   function handleDecrementExtra(id: number): void {
-    // Decrement extra quantity
+    const updatedExtras = extras.map(extra => {
+      if (extra.id === id) {
+        extra.quantity = extra.quantity === 0 ? 0 : (extra.quantity -= 1);
+        return extra;
+      }
+      return extra;
+    });
+
+    setExtras(updatedExtras);
   }
 
   function handleIncrementFood(): void {
-    // Increment food quantity
+    setFoodQuantity(state => state + 1);
   }
 
   function handleDecrementFood(): void {
-    // Decrement food quantity
+    setFoodQuantity(state => (state === 0 ? 0 : state - 1));
   }
 
   const toggleFavorite = useCallback(() => {
-    // Toggle if food is favorite or not
-  }, [isFavorite, food]);
+    setIsFavorite(!isFavorite);
+  }, [isFavorite]);
 
   const cartTotal = useMemo(() => {
-    // Calculate cartTotal
+    const extrasPrice = extras.reduce((acc: number, extra: Extra) => {
+      acc += extra.quantity * extra.value;
+      return acc;
+    }, 0);
+
+    return (food.price + extrasPrice) * foodQuantity;
   }, [extras, food, foodQuantity]);
 
   async function handleFinishOrder(): Promise<void> {
     // Finish the order and save on the API
+
+    const order = await api.post('orders');
   }
 
-  // Calculate the correct icon name
   const favoriteIconName = useMemo(
     () => (isFavorite ? 'favorite' : 'favorite-border'),
     [isFavorite],
   );
 
   useLayoutEffect(() => {
-    // Add the favorite icon on the right of the header bar
     navigation.setOptions({
       headerRight: () => (
         <MaterialIcon
